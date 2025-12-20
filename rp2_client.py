@@ -146,7 +146,7 @@ if __name__ == "__main__":
             # 2. 데이터 패키징
             sensor_data = {
                 "temp": temp,
-                "turbidity": turbidity, # 필요 시 NTU 단위 변환 로직 추가
+                "turbidity": (255-turbidity)//255*100, # 필요 시 NTU 단위 변환 로직 추가
                 "level": level_percent
             }
             
