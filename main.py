@@ -178,7 +178,7 @@ class AquaFarmApp(QWidget):
         # 3. 수위 경고
         if 'level' in data:
             level = float(data['level'])
-            if level < 30.0:
+            if level <45.0:
                 if not self.is_level_warning_shown:
                     self.is_level_warning_shown = True
                     WarningDialog("수위가 낮습니다!\n물을 보충해주세요.", self).exec_()
