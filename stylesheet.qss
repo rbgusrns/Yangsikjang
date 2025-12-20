@@ -102,3 +102,48 @@ QPushButton[class="control_btn"]:!checkable:pressed {
     background-color: #54a0ff; /* 누르는 순간 파란색으로 채움 */
     color: white;
 }
+
+/* ==========================================================
+   EVENT POPUP (QMessageBox & Dialog) STYLE
+   ========================================================== */
+
+/* 1. 팝업창 본체: 메인 테마와 통일된 어두운 배경 + 테두리 포인트 */
+QMessageBox, QDialog {
+    background-color: #2c3e50; /* 메인보다 살짝 밝거나 같은 톤 */
+    border: 2px solid #00d2d3; /* 헤더 색상과 맞춘 Cyan 테두리 포인트 */
+    border-radius: 12px;
+}
+
+/* 2. 팝업 내부 텍스트 (메시지 내용) */
+QMessageBox QLabel, QDialog QLabel {
+    color: #ecf0f1; /* 흰색 계열 텍스트 */
+    font-size: 16px;
+    font-weight: normal;
+    background-color: transparent; /* 배경 투명하게 */
+}
+
+/* 3. 팝업창 버튼 (OK, Cancel 등) */
+QMessageBox QPushButton, QDialog QPushButton {
+    background-color: rgba(255, 255, 255, 0.1); /* 은은한 반투명 배경 */
+    color: #ecf0f1;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    padding: 6px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 60px;
+}
+
+/* 4. 팝업 버튼 호버 효과 */
+QMessageBox QPushButton:hover, QDialog QPushButton:hover {
+    background-color: #00d2d3; /* 호버 시 포인트 컬러(Cyan) */
+    color: #2c3e50; /* 글자는 어둡게 (가독성) */
+    border: 1px solid #00d2d3;
+}
+
+/* 5. 팝업 버튼 눌림 효과 */
+QMessageBox QPushButton:pressed, QDialog QPushButton:pressed {
+    background-color: #00cec9;
+    padding-top: 8px; /* 살짝 눌리는 느낌 */
+    padding-bottom: 4px;
+}
