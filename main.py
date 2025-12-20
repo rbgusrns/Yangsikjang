@@ -9,7 +9,7 @@ from mqtt_worker import MqttWorker
 
 # --- 카드 위젯 클래스들 (이전과 동일) ---
 class SensorCard(QFrame):
-    def __init__(self, title, unit, icon_text="📊"):
+    def __init__(self, title, unit, icon_text=""):
         super().__init__()
         self.setProperty("class", "sensor_card")
         layout = QVBoxLayout(self)
@@ -64,7 +64,7 @@ class AquaFarmApp(QWidget):
         main_layout.setSpacing(20)
 
         # 헤더
-        header = QLabel("🐟 Aquaculture Management System")
+        header = QLabel("자동 양식장 시스템")
         header.setObjectName("HeaderLabel")
         header.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(header)
@@ -73,9 +73,9 @@ class AquaFarmApp(QWidget):
         sensor_layout = QHBoxLayout()
         sensor_layout.setSpacing(20)
         
-        self.temp_card = SensorCard("수온", "°C", "🌡️")
-        self.turbidity_card = SensorCard("탁도", "NTU", "💧")
-        self.level_card = SensorCard("수위", "%", "📏")
+        self.temp_card = SensorCard("수온", "°C")
+        self.turbidity_card = SensorCard("탁도", "NTU")
+        self.level_card = SensorCard("수위", "%")
         
         sensor_layout.addWidget(self.temp_card)
         sensor_layout.addWidget(self.turbidity_card)
@@ -88,7 +88,7 @@ class AquaFarmApp(QWidget):
 
         self.motor_card = ControlCard("수류 모터", "OFF", self.on_motor_toggled, is_toggle=True)
         self.heater_card = ControlCard("히터 제어", "OFF", self.on_heater_toggled, is_toggle=True)
-        self.feeder_card = ControlCard("먹이 급여", "밥 주기 🍚", self.on_feed_clicked, is_toggle=False)
+        self.feeder_card = ControlCard("먹이 급여", "밥 주기 ", self.on_feed_clicked, is_toggle=False)
 
         control_layout.addWidget(self.motor_card)
         control_layout.addWidget(self.heater_card)
