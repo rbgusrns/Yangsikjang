@@ -76,7 +76,7 @@ def control_feeder():
     """밥 주기 동작: 모터를 잠깐 켰다가 끔"""
     print(">>> 🍚 물고기 밥 주는 중... (3초간 가동)")
     GPIO.output(PIN_FEEDER, GPIO.HIGH)
-    time.sleep(1.368) # 3초 동안 밥 모터 가동 (시간 조절 가능)
+    time.sleep(1.37) # 3초 동안 밥 모터 가동 (시간 조절 가능)
     GPIO.output(PIN_FEEDER, GPIO.LOW)
     print(">>> 🍚 밥 주기 완료")
 
