@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 # ==========================================
 
 # [네트워크 설정] RPi 1(UI)의 IP 주소를 입력하세요.
-BROKER_IP = "192.168.0.XX" 
+BROKER_IP = "192.168.0.202" 
 PORT = 1883
 
 # [MQTT 토픽]
