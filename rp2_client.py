@@ -142,11 +142,12 @@ if __name__ == "__main__":
             # 수위 값 퍼센트 변환 (센서 특성에 맞게 보정 필요)
             # 예: 0~255 값을 0~100%로 단순 변환
             level_percent = int((level_raw / 255.0) * 100)
+            turbidity_percent = int((turbidity / 255.0) * 100)
             
             # 2. 데이터 패키징
             sensor_data = {
                 "temp": temp,
-                "turbidity": (255-turbidity)//255*100, # 필요 시 NTU 단위 변환 로직 추가
+                "turbidity": turbidity_percent, # 필요 시 NTU 단위 변환 로직 추가
                 "level": level_percent
             }
             
