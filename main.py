@@ -1,13 +1,47 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QPushButton, QLabel, QFrame)
-from PyQt5.QtCore import pyqtSlot, Qt, QFile, QTextStream
+                             QPushButton, QLabel, QFrame, QDialog, QMessageBox)
+from PyQt5.QtCore import pyqtSlot, Qt, QFile, QTextStream, QTimer
 from PyQt5.QtGui import QColor
 
 # --- 모듈 임포트 ---
+# (mqtt_worker.py 파일이 같은 폴더에 있어야 합니다)
 from mqtt_worker import MqttWorker
 
-# --- 카드 위젯 클래스들 (이전과 동일) ---
+# --- 경고창 다이얼로그 클래스 (수위 경고용) ---
+class WarningDialog(QDialog):
+    def __init__(self, message, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("경고")
+        self.setWindowFlags(Qt.Dialog | Qt.CustomizeWindowHint | Qt.WindowTitleHint) # 닫기 버튼 없애거나 커스텀 가능
+        self.setObjectName("WarningDialog") # 스타일시트 적용용 ID
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setAlignment(Qt.AlignCenter)
+
+        # 경고 메시지 라벨
+        msg_label = QLabel(message)
+        msg_label.setAlignment(Qt.AlignCenter)
+        # 폰트나 색상을 강조하고 싶다면 setStyleSheet 직접 사용 가능
+        msg_label.setStyleSheet("font-size: 24px; font-weight: bold; color: red;") 
+        layout.addWidget(msg_label)
+
+        # 확인 버튼
+        ok_btn = QPushButton("확인")
+        ok_btn.setFixedSize(120, 50)
+        ok_btn.clicked.connect(self.accept)
+        layout.addWidget(ok_btn)
+        
+    def exec_(self):
+        # 부모 중앙에 위치
+        if self.parent():
+            parent_rect = self.parent().geometry()
+            self.move(parent_rect.center() - self.rect().center())
+        return super().exec_()
+
+# --- 카드 위젯 클래스들 (기존 유지) ---
 class SensorCard(QFrame):
     def __init__(self, title, unit, icon_text=""):
         super().__init__()
@@ -48,12 +82,19 @@ class AquaFarmApp(QWidget):
         self.setWindowTitle("스마트 양식장 관리 시스템")
         self.resize(1024, 600)
         
+        # 상태 플래그 (중복 경고 방지용)
+        self.is_level_warning_shown = False 
+
         # === MQTT 설정 ===
-        # 브로커가 이 라즈베리파이(localhost)에 있다면 'localhost'
-        # 다른 곳에 있다면 해당 IP 입력
         self.mqtt_thread = MqttWorker(broker_ip="localhost") 
         self.mqtt_thread.data_received.connect(self.update_sensors)
         self.mqtt_thread.start()
+
+        # === 자동 급여 타이머 설정 (5분) ===
+        self.feed_timer = QTimer(self)
+        self.feed_timer.setInterval(5 * 60 * 1000) # 5분 (ms 단위)
+        self.feed_timer.timeout.connect(self.on_feed_clicked) # 기존 급여 함수 재사용
+        self.feed_timer.start()
 
         self._init_ui()
         self.load_stylesheet("stylesheet.qss")
@@ -88,7 +129,7 @@ class AquaFarmApp(QWidget):
 
         self.motor_card = ControlCard("수류 모터", "OFF", self.on_motor_toggled, is_toggle=True)
         self.heater_card = ControlCard("히터 제어", "OFF", self.on_heater_toggled, is_toggle=True)
-        self.feeder_card = ControlCard("먹이 급여", "밥 주기 ", self.on_feed_clicked, is_toggle=False)
+        self.feeder_card = ControlCard("먹이 급여", "밥 주기", self.on_feed_clicked, is_toggle=False)
 
         control_layout.addWidget(self.motor_card)
         control_layout.addWidget(self.heater_card)
@@ -98,10 +139,59 @@ class AquaFarmApp(QWidget):
     # --- MQTT 데이터 수신 처리 ---
     @pyqtSlot(dict)
     def update_sensors(self, data):
-        """RPi2 -> MQTT -> UI로 들어온 센서 데이터 표시"""
+        """RPi2 -> MQTT -> UI로 들어온 센서 데이터 표시 및 자동 제어"""
+        
+        # 1. UI 업데이트
         if 'temp' in data: self.temp_card.update_value(data['temp'], "°C")
         if 'turbidity' in data: self.turbidity_card.update_value(data['turbidity'], "NTU")
         if 'level' in data: self.level_card.update_value(data['level'], "%")
+
+        # 2. 자동 제어 로직 실행
+        self.check_auto_control(data)
+
+    def check_auto_control(self, data):
+        """센서 값에 따른 자동 제어 로직"""
+        
+        # (1) 탁도 제어: 30 NTU 이상이면 수류 모터 ON, 아니면 OFF
+        if 'turbidity' in data:
+            turbidity_val = float(data['turbidity'])
+            is_motor_on = self.motor_card.btn.isChecked()
+
+            if turbidity_val >= 30:
+                if not is_motor_on:
+                    self.motor_card.btn.setChecked(True) # 토글 시그널 발생 -> MQTT 전송됨
+            else:
+                # 30 미만으로 떨어지면 자동으로 끌 것인가? (요구사항에 따라 주석 처리 가능)
+                if is_motor_on:
+                    self.motor_card.btn.setChecked(False)
+
+        # (2) 수온 제어: 20도 이하이면 히터 ON, 아니면 OFF
+        if 'temp' in data:
+            temp_val = float(data['temp'])
+            is_heater_on = self.heater_card.btn.isChecked()
+
+            if temp_val <= 20:
+                if not is_heater_on:
+                    self.heater_card.btn.setChecked(True)
+            else:
+                # 20도 초과 시 자동으로 끌 것인가? (안전상 끄는 로직 추가함)
+                if is_heater_on:
+                    self.heater_card.btn.setChecked(False)
+
+        # (3) 수위 경고: 수위가 30% 미만(임의 설정)이면 경고창
+        if 'level' in data:
+            level_val = float(data['level'])
+            LOW_LEVEL_THRESHOLD = 30.0 # 경고 기준 (30% 미만)
+
+            if level_val < LOW_LEVEL_THRESHOLD:
+                if not self.is_level_warning_shown:
+                    self.is_level_warning_shown = True
+                    # 경고창 띄우기
+                    dialog = WarningDialog("수위가 낮습니다!\n물을 보충해주세요.", self)
+                    dialog.exec_()
+            else:
+                # 수위가 정상으로 돌아오면 플래그 초기화 (다시 떨어지면 또 경고 가능하도록)
+                self.is_level_warning_shown = False
 
     # --- 제어 명령 전송 ---
     def on_motor_toggled(self, checked):
@@ -115,7 +205,18 @@ class AquaFarmApp(QWidget):
         self.mqtt_thread.publish_command("heater", state)
 
     def on_feed_clicked(self):
+        # 버튼 텍스트 잠시 변경 (피드백 효과)
+        self.feeder_card.btn.setText("동작 중...")
+        self.feeder_card.btn.setEnabled(False)
+        
         self.mqtt_thread.publish_command("feeder", "ACTIVATE")
+        
+        # 1초 뒤 버튼 원래대로 복구
+        QTimer.singleShot(1000, lambda: self.reset_feeder_btn())
+
+    def reset_feeder_btn(self):
+        self.feeder_card.btn.setText("밥 주기")
+        self.feeder_card.btn.setEnabled(True)
 
     def load_stylesheet(self, filename):
         qss_file = QFile(filename)
