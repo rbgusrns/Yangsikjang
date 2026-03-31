@@ -86,6 +86,11 @@ The communication interface is intentionally small and uses one telemetry topic 
 - `mqtt_worker.py` subscribes to `farm/sensors`, decodes the JSON payload, and emits the result to the PyQt dashboard through `data_received`.
 - `main.py` receives that dictionary in `update_sensors`, refreshes the cards, and immediately evaluates the automation rules.
 
+Sensor collection interfaces used in the current implementation:
+
+- **1-Wire**: the DS18B20 temperature sensor is read from the Linux device path in `rp2_client.py`, which reflects the Raspberry Pi 1-Wire interface.
+- **I2C**: the PCF8591 ADC is accessed through `smbus` on bus `1` at address `0x48`, and its channels are used for turbidity and water level sampling.
+
 Current telemetry payload shape:
 
 ```json
