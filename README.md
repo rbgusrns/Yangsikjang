@@ -218,4 +218,4 @@ The repository structure also lines up well with that division of work: the dash
 ## Authors
 
 - Park Gyuhyeon - Electrical and Electronic Engineering, Dankook University
-- Lim Songju
+- Lim Songju - Electrical and Electronic Engineering, Dankook University
