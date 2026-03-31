@@ -15,7 +15,7 @@ A compact embedded project that monitors tank conditions in real time and combin
 <img src="https://img.shields.io/badge/Platform-Raspberry%20Pi-b45309?style=for-the-badge" alt="Raspberry Pi badge" />
 
 </div>
-
+ 
 ---
 
 ## Overview
